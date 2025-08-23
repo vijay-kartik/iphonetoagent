@@ -1,106 +1,30 @@
 package org.example.routes
 
-import io.ktor.http.*
 import io.ktor.server.application.*
-import io.ktor.server.request.*
-import io.ktor.server.response.*
-import io.ktor.server.routing.*
-import kotlinx.serialization.json.JsonObject
-import org.example.services.auth.AuthService
-import org.example.services.notion.NotionService
-import org.example.types.*
+import org.example.routes.config.RouteConfiguration
 import org.slf4j.LoggerFactory
 
+/**
+ * Main API Routes class that delegates to modular route configuration.
+ * This class serves as the entry point for all API routing configuration.
+ */
 class ApiRoutes {
     private val logger = LoggerFactory.getLogger(ApiRoutes::class.java)
-    private val notionService = NotionService()
-    private val authService = AuthService()
+    private val routeConfiguration = RouteConfiguration()
     
+    /**
+     * Configures all API routes for the application.
+     * Routes are organized into separate handlers for better maintainability.
+     */
     fun configureRoutes(application: Application) {
-        application.routing {
-            route("/api") {
-                route("/ingest") {
-                    post {
-                        try {
-                            // Validate API key
-                            if (!authService.validateApiKey(call)) {
-                                return@post
-                            }
-                            
-                            // Parse request body
-                            val request = call.receive<IngestRequest>()
-                            
-                            // Validate request
-                            if (request.title.isBlank() || request.content.isBlank()) {
-                                call.respond(
-                                    HttpStatusCode.BadRequest,
-                                    ErrorResponse(
-                                        message = "Title and content are required",
-                                        code = "VALIDATION_ERROR"
-                                    )
-                                )
-                                return@post
-                            }
-                            
-                            logger.info("Processing ingest request: ${request.title}")
-                            
-                            // Check if page exists and either append or create
-                            val existingPageId = notionService.findPageByTitle(request.title)
-                            val (notionResponse, action, message) = if (existingPageId != null) {
-                                // Append to existing page
-                                logger.info("Found existing page, appending content")
-                                Triple(
-                                    notionService.appendContentToPage(existingPageId, request.content),
-                                    "appended",
-                                    "Content successfully appended to existing page"
-                                )
-                            } else {
-                                // Create new page
-                                logger.info("No existing page found, creating new page")
-                                Triple(
-                                    notionService.createPage(request),
-                                    "created",
-                                    "New page successfully created in Notion"
-                                )
-                            }
-                            
-                            // Extract page ID from response
-                            val pageId = existingPageId ?: notionResponse["id"]?.toString()?.removeSurrounding("\"") ?: "unknown"
-                            
-                            // Return success response
-                            call.respond(
-                                HttpStatusCode.OK,
-                                IngestResponse(
-                                    status = "success",
-                                    notionPageId = pageId,
-                                    message = message,
-                                    action = action
-                                )
-                            )
-                            
-                        } catch (e: Exception) {
-                            logger.error("Error processing ingest request", e)
-                            call.respond(
-                                HttpStatusCode.InternalServerError,
-                                ErrorResponse(
-                                    message = "Internal server error: ${e.message}",
-                                    code = "INTERNAL_ERROR"
-                                )
-                            )
-                        }
-                    }
-                }
-                
-                // Health check endpoint
-                get("/health") {
-                    call.respond(
-                        HealthResponse(
-                            status = "healthy",
-                            timestamp = System.currentTimeMillis()
-                        )
-                    )
-                }
-            }
+        logger.info("Configuring API routes...")
+        
+        try {
+            routeConfiguration.configureApiRoutes(application)
+            logger.info("API routes configured successfully")
+        } catch (e: Exception) {
+            logger.error("Failed to configure API routes", e)
+            throw e
         }
     }
 }
