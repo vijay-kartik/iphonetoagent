@@ -1,0 +1,49 @@
+# Gradle
+.gradle/
+gradle-app.setting
+!gradle/wrapper/gradle-wrapper.jar
+!gradle/wrapper/gradle-wrapper.properties
+
+# Build outputs
+app/build/
+build/
+
+# IDE files
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Environment files
+.env
+env.properties
+
+# Git
+.git/
+.gitignore
+
+# Docker
+Dockerfile
+.dockerignore
+
+# Documentation
+*.md
+docs/
+
+# Test files
+**/test/
+**/*Test.kt
+**/*Test.java
+
+# Temporary files
+*.tmp
+*.temp
