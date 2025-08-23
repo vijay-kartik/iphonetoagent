@@ -20,7 +20,8 @@ data class Metadata(
 data class IngestResponse(
     val status: String,
     val notionPageId: String? = null,
-    val message: String
+    val message: String,
+    val action: String? = null // "created" or "appended"
 )
 
 @Serializable
@@ -88,4 +89,56 @@ data class NotionPageResponse(
     val id: String,
     val url: String,
     val properties: NotionProperties
+)
+
+// Search request and response types
+@Serializable
+data class NotionSearchRequest(
+    val query: String,
+    val filter: NotionSearchFilter? = null,
+    val page_size: Int = 10
+)
+
+@Serializable
+data class NotionSearchFilter(
+    val value: String = "page",
+    val property: String = "object"
+)
+
+@Serializable
+data class NotionSearchResponse(
+    val results: List<NotionSearchResult>,
+    val has_more: Boolean,
+    val next_cursor: String? = null
+)
+
+@Serializable
+data class NotionSearchResult(
+    val id: String,
+    val url: String,
+    val properties: Map<String, NotionProperty>
+)
+
+@Serializable
+data class NotionProperty(
+    val type: String,
+    val title: List<NotionRichText>? = null
+)
+
+// Database query types
+@Serializable
+data class NotionDatabaseQueryRequest(
+    val filter: NotionDatabaseFilter? = null,
+    val page_size: Int = 10
+)
+
+@Serializable
+data class NotionDatabaseFilter(
+    val property: String,
+    val title: NotionTitleFilter
+)
+
+@Serializable
+data class NotionTitleFilter(
+    val equals: String
 )

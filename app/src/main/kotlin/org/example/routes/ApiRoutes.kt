@@ -44,11 +44,28 @@ class ApiRoutes {
                             
                             logger.info("Processing ingest request: ${request.title}")
                             
-                            // Create Notion page
-                            val notionResponse = notionService.createPage(request)
+                            // Check if page exists and either append or create
+                            val existingPageId = notionService.findPageByTitle(request.title)
+                            val (notionResponse, action, message) = if (existingPageId != null) {
+                                // Append to existing page
+                                logger.info("Found existing page, appending content")
+                                Triple(
+                                    notionService.appendContentToPage(existingPageId, request.content),
+                                    "appended",
+                                    "Content successfully appended to existing page"
+                                )
+                            } else {
+                                // Create new page
+                                logger.info("No existing page found, creating new page")
+                                Triple(
+                                    notionService.createPage(request),
+                                    "created",
+                                    "New page successfully created in Notion"
+                                )
+                            }
                             
-                            // Extract page ID from raw response
-                            val pageId = notionResponse["id"]?.toString()?.removeSurrounding("\"") ?: "unknown"
+                            // Extract page ID from response
+                            val pageId = existingPageId ?: notionResponse["id"]?.toString()?.removeSurrounding("\"") ?: "unknown"
                             
                             // Return success response
                             call.respond(
@@ -56,7 +73,8 @@ class ApiRoutes {
                                 IngestResponse(
                                     status = "success",
                                     notionPageId = pageId,
-                                    message = "Data successfully sent to Notion"
+                                    message = message,
+                                    action = action
                                 )
                             )
                             
