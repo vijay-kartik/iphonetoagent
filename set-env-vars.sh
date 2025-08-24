@@ -31,3 +31,4 @@ else
     echo "Please create env.properties with your configuration first."
     exit 1
 fi
+

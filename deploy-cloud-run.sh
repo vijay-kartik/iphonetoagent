@@ -65,3 +65,4 @@ echo "   gcloud run services update $SERVICE_NAME --region=$REGION --set-env-var
 echo ""
 echo "📊 To view logs:"
 echo "   gcloud run services logs read $SERVICE_NAME --region=$REGION"
+

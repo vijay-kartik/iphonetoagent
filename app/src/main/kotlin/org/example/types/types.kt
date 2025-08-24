@@ -142,3 +142,48 @@ data class NotionDatabaseFilter(
 data class NotionTitleFilter(
     val equals: String
 )
+
+// Table operations types
+@Serializable
+data class TableIngestRequest(
+    val pageTitle: String,
+    val tableData: Map<String, String>, // column_name -> value
+    val metadata: Metadata? = null
+)
+
+@Serializable
+data class TableIngestResponse(
+    val status: String,
+    val notionPageId: String? = null,
+    val message: String,
+    val action: String? = null, // "created" or "appended"
+    val tableRowId: String? = null
+)
+
+// Notion table block types
+@Serializable
+data class NotionTableBlock(
+    val `object`: String = "block",
+    val type: String = "table",
+    val table: NotionTable
+)
+
+@Serializable
+data class NotionTable(
+    val table_width: Int,
+    val has_column_header: Boolean = true,
+    val has_row_header: Boolean = false,
+    val children: List<NotionTableRow>
+)
+
+@Serializable
+data class NotionTableRow(
+    val `object`: String = "block", 
+    val type: String = "table_row",
+    val table_row: NotionTableRowData
+)
+
+@Serializable
+data class NotionTableRowData(
+    val cells: List<List<NotionRichText>>
+)

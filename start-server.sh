@@ -32,6 +32,7 @@ fi
 
 echo "Environment variables loaded successfully!"
 echo "API_KEY: ${API_KEY:0:8}..."
+echo "ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:0:8}..."
 echo "NOTION_API_TOKEN: ${NOTION_API_TOKEN:0:8}..."
 echo "NOTION_DATABASE_ID: ${NOTION_DATABASE_ID:0:8}..."
 echo "PORT: ${PORT:-8080}"

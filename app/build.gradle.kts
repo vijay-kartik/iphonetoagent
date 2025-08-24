@@ -22,20 +22,21 @@ repositories {
 
 dependencies {
     // Ktor dependencies
-    implementation("io.ktor:ktor-server-core:2.3.7")
-    implementation("io.ktor:ktor-server-netty:2.3.7")
-    implementation("io.ktor:ktor-server-content-negotiation:2.3.7")
-    implementation("io.ktor:ktor-serialization-kotlinx-json:2.3.7")
-    implementation("io.ktor:ktor-server-call-logging:2.3.7")
-    implementation("io.ktor:ktor-server-auth:2.3.7")
-    implementation("io.ktor:ktor-server-status-pages:2.3.7")
-    implementation("io.ktor:ktor-server-cors:2.3.7")
+    implementation("io.ktor:ktor-server-core:3.2.3")
+    implementation("io.ktor:ktor-server-netty:3.2.3")
+    implementation("io.ktor:ktor-server-content-negotiation:3.2.3")
+    implementation("io.ktor:ktor-serialization-kotlinx-json:3.2.3")
+    implementation("io.ktor:ktor-server-call-logging:3.2.3")
+    implementation("io.ktor:ktor-server-auth:3.2.3")
+    implementation("io.ktor:ktor-server-status-pages:3.2.3")
+    implementation("io.ktor:ktor-server-cors:3.2.3")
+    // implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3") // Ktor includes coroutines internally
     
     // HTTP client for Notion API
-    implementation("io.ktor:ktor-client-core:2.3.7")
-    implementation("io.ktor:ktor-client-cio:2.3.7")
-    implementation("io.ktor:ktor-client-content-negotiation:2.3.7")
-    implementation("io.ktor:ktor-client-logging:2.3.7")
+    implementation("io.ktor:ktor-client-core:3.2.3")
+    implementation("io.ktor:ktor-client-cio:3.2.3")
+    implementation("io.ktor:ktor-client-content-negotiation:3.2.3")
+    implementation("io.ktor:ktor-client-logging:3.2.3")
     
     // Logging
     implementation("ch.qos.logback:logback-classic:1.4.11")
@@ -44,9 +45,13 @@ dependencies {
     implementation("com.typesafe:config:1.4.2")
     
     // Testing
-    testImplementation("io.ktor:ktor-server-test-host:2.3.7")
+    testImplementation("io.ktor:ktor-server-test-host:3.2.3")
     testImplementation("org.jetbrains.kotlin:kotlin-test:2.2.0")
     testImplementation("junit:junit:4.13.2")
+
+    //koog agentic ai framework
+    implementation("ai.koog:koog-agents:0.3.0")
+    implementation("com.google.code.gson:gson:2.10.1")
 }
 
 testing {

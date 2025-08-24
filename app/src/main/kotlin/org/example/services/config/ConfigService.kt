@@ -30,6 +30,18 @@ class ConfigService {
     } catch (e: Exception) {
         System.getenv("API_KEY") ?: "test-api-key"
     }
+
+    val anthropicApiKey: String = try {
+        config.getString("anthropic.apiKey")
+    } catch (e: Exception) {
+        System.getenv("ANTHROPIC_API_KEY") ?: "test-api-key"
+    }
+
+    val geminiApiKey: String = try {
+        config.getString("gemini.apiKey")
+    } catch (e: Exception) {
+        System.getenv("GEMINI_API_KEY") ?: "test-api-key"
+    }
     
     companion object {
         private var instance: ConfigService? = null

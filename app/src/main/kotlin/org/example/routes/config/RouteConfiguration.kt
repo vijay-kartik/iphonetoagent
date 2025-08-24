@@ -4,6 +4,7 @@ import io.ktor.server.application.*
 import io.ktor.server.routing.*
 import org.example.routes.handlers.HealthRouteHandler
 import org.example.routes.handlers.IngestRouteHandler
+import org.example.routes.handlers.TableIngestRouteHandler
 
 class RouteConfiguration {
     
@@ -11,6 +12,7 @@ class RouteConfiguration {
         application.routing {
             route("/api") {
                 configureIngestRoutes()
+                configureTableIngestRoutes()
                 configureHealthRoutes()
             }
         }
@@ -22,6 +24,16 @@ class RouteConfiguration {
         route("/ingest") {
             post {
                 ingestHandler.handleIngestRequest(call)
+            }
+        }
+    }
+    
+    private fun Route.configureTableIngestRoutes() {
+        val tableIngestHandler = TableIngestRouteHandler()
+        
+        route("/table-ingest") {
+            post {
+                tableIngestHandler.handleTableIngestRequest(call)
             }
         }
     }
