@@ -5,7 +5,10 @@ import ai.koog.agents.core.agent.config.AIAgentConfig
 import ai.koog.agents.core.agent.entity.AIAgentStrategy
 import ai.koog.agents.core.dsl.builder.forwardTo
 import ai.koog.agents.core.dsl.builder.strategy
+import ai.koog.agents.core.dsl.extension.nodeExecuteTool
 import ai.koog.agents.core.dsl.extension.nodeLLMRequest
+import ai.koog.agents.core.dsl.extension.onToolCall
+import ai.koog.agents.core.dsl.extension.nodeLLMSendToolResult
 import ai.koog.agents.core.tools.ToolRegistry
 import ai.koog.agents.features.eventHandler.feature.handleEvents
 import ai.koog.prompt.dsl.prompt
@@ -31,66 +34,55 @@ class KoogService {
     )
 
     val transactionAgentStrategy: AIAgentStrategy<String, Transaction> = strategy("sms-analyser") {
-        // this method sends the user message to LLM for getting response or calling appropriate tool next.
-        val setup by nodeLLMRequest()
-        val categorizeSMS by node<Message, Pair<TransactionType, String>> { smsText ->
-            // Use the llm object to classify the smsText into a TransactionType
-            val txnType: TransactionType = llm.writeSession {
-                prompt = prompt("categorise-sms") {
-                    system(SYSTEM_PROMPT)
-                    user("Classify the following SMS as INFLOW, OUTFLOW, or CC_USAGE.\n\nSMS: $smsText")
-
-                }
-                val response = this.requestLLMStructured(
-                    structure = JsonStructuredData.createJsonStructure<TransactionTypeVO>(),                // Structure expected: TransactionType
-                    fixingModel = AnthropicModels.Opus_4            // Or your preferred LLM model
-                )
-                // Expecting something like: { "type": "INFLOW" }
-                if (response.isSuccess) TransactionType.fromString(response.getOrNull()!!.structure.type)
-                else TransactionType.NONE
-            }
-            Pair(txnType, smsText.content)
-        }
-
-        val appendTransactionType by node<Pair<TransactionType, String>, String> { smsWithType ->
-            """You are an expert in extracting transaction information from Indian bank and credit card SMS.
-                |
-                |INSTRUCTIONS:
-                |1. Use the expense_extractor tool to extract structured transaction details
-                |2. Extract: date, detail (merchant/person), amount_inr, amount_usd, type
-                |3. If date is not mentioned, use today's date in DD/MM/YYYY format
-                |4. Convert amounts to proper numbers (remove currency symbols)
-                |5. The transaction type is: ${smsWithType.first}
-                |
-                |SMS TEXT:
-                |${smsWithType.second}
-                |
-                |Please use the expense_extractor tool to extract this information.""".trimMargin()
-        }
-
-        val extractExpense by nodeLLMRequest()
-
-        val getStructuredExpense by node<Message.Response, Transaction> { smsWithCategory ->
+        // Initial LLM request node
+        val nodeCallLLM by nodeLLMRequest()
+        
+        // Tool execution nodes
+        val validateResult by nodeExecuteTool("transaction-detail-validator")
+        val sendToolResult by nodeLLMSendToolResult()
+        
+        // Processing node to handle validated results
+        val processValidatedResult by node<Message.Response, Transaction> { response ->
             try {
+                // Parse the response which contains both original LLM output and validation result
+                val content = response.content
+                
+                // Extract structured Transaction data
                 val result = llm.writeSession {
+                    prompt = prompt("extract-transaction") {
+                        system("Extract transaction data from the following response and return structured JSON.")
+                        user("Response: $content")
+                    }
                     this.requestLLMStructured(
                         structure = transactionStructure,
-                        fixingModel = AnthropicModels.Opus_4
+                        fixingModel = AnthropicModels.Haiku_3_5
                     )
                 }
+                
                 if (result.isSuccess) {
                     result.getOrNull()?.structure as Transaction
-                } else Transaction("", "", Double.NaN, Double.NaN, TransactionType.INFLOW)
+                } else {
+                    Transaction("", "", Double.NaN, Double.NaN, TransactionType.INFLOW)
+                }
             } catch (e: Exception) {
                 Transaction("", "", Double.NaN, Double.NaN, TransactionType.INFLOW)
             }
         }
-        edge(nodeStart forwardTo setup)
-        edge(setup forwardTo categorizeSMS)
-        edge(categorizeSMS forwardTo appendTransactionType)
-        edge(appendTransactionType forwardTo extractExpense)
-        edge(extractExpense forwardTo getStructuredExpense)
-        edge(getStructuredExpense forwardTo nodeFinish)
+        
+        // Fallback processing for invalid data
+        val processInvalidResult by node<Message.Response, Transaction> { response ->
+            // Return a failed transaction for invalid data
+            Transaction("INVALID", "VALIDATION_FAILED", 0.0, 0.0, TransactionType.NONE)
+        }
+        
+        // Define the flow with proper validation routing
+        edge(nodeStart forwardTo nodeCallLLM)
+        edge(nodeCallLLM forwardTo validateResult onToolCall { true })
+        edge(nodeCallLLM forwardTo processValidatedResult) // Direct path if no tool call
+        edge(validateResult forwardTo sendToolResult)
+        edge(sendToolResult forwardTo processValidatedResult) // Process if validation passes
+        edge(processValidatedResult forwardTo nodeFinish)
+        edge(processInvalidResult forwardTo nodeFinish)
     }
 
     // Create the agent once and reuse it
@@ -99,21 +91,22 @@ class KoogService {
             promptExecutor = simpleAnthropicExecutor(config.anthropicApiKey),
             strategy = transactionAgentStrategy,
             agentConfig = AIAgentConfig(
-                model = AnthropicModels.Opus_4,
+                model = AnthropicModels.Haiku_3_5,
                 maxAgentIterations = 10,
                 prompt = prompt("system-prompt") {
                     system(
                         """You are an expert in understanding Indian bank and credit card transaction SMS.
                         |
-                        |You have access to an expense_extractor tool that helps you extract structured transaction information.
-                        |When asked to extract transaction details, always use the expense_extractor tool.
+                        |When you receive an SMS text, you must:
+                        |1. ALWAYS use the expense_extractor tool to extract transaction information
+                        |2. Extract these details from the SMS:
+                        |   - date: Transaction date (if not mentioned, use today's date in DD/MM/YYYY format)
+                        |   - detail: Merchant, person, or transaction description
+                        |   - amount_inr: Amount in Indian Rupees (convert from text, remove currency symbols)
+                        |   - amount_usd: Amount in USD (usually 0.0 for Indian transactions)
+                        |   - type: Transaction type - determine from context as INFLOW, OUTFLOW, or CC_USAGE
                         |
-                        |The tool requires these parameters:
-                        |- date: Transaction date in DD/MM/YYYY format
-                        |- detail: Merchant or person name
-                        |- amount_inr: Amount in Indian Rupees
-                        |- amount_usd: Amount in US Dollars (0.0 if not applicable)
-                        |- type: Transaction type (INFLOW, OUTFLOW, CC_USAGE)""".trimMargin()
+                        |ALWAYS call the expense_extractor tool first before providing any other response.""".trimMargin()
                     )
                 }),
             toolRegistry = ToolRegistry { tool(ExpenseExtractor) }
