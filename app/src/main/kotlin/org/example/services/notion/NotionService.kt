@@ -10,7 +10,10 @@ import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
+import org.example.routes.request.TxnSMSRequest
+import org.example.routes.response.TxnSmsResponse
 import org.example.services.agentic_ai.KoogService
+import org.example.services.agentic_ai.data.TransactionType
 import org.example.services.config.ConfigService
 import org.example.types.*
 import org.slf4j.LoggerFactory
@@ -151,26 +154,6 @@ class NotionService {
         }
     }
 
-    suspend fun processRequest(request: IngestRequest): JsonObject {
-        try {
-            // First, try to find an existing page with the same title
-            val existingPageId = findPageByTitle(request.title)
-            
-            return if (existingPageId != null) {
-                // Page exists, append content to it
-                logger.info("Appending to existing page: $existingPageId")
-                appendContentToPage(existingPageId, request.content)
-            } else {
-                // Page doesn't exist, create a new one
-                logger.info("Creating new page with title: ${request.title}")
-                createPage(request)
-            }
-        } catch (e: Exception) {
-            logger.error("Error processing request", e)
-            throw e
-        }
-    }
-
     suspend fun appendToTable(pageId: String, tableData: Map<String, String>): JsonObject {
         try {
             logger.info("Appending row to table in page: $pageId")
@@ -179,20 +162,34 @@ class NotionService {
             val tableBlockId = findTableInPage(pageId)
                 ?: throw Exception("No table found in page $pageId")
             
-            // Convert the map data to table cells
+            logger.info("Using table block ID: $tableBlockId")
+            
+            // Convert table data to proper cell format
             val cells = tableData.values.map { value ->
-                listOf(NotionRichText(text = NotionText(value)))
+                listOf(
+                    mapOf(
+                        "type" to "text",
+                        "text" to mapOf("content" to value)
+                    )
+                )
             }
             
-            val newTableRow = NotionTableRow(
-                table_row = NotionTableRowData(cells = cells)
+            val requestBody = mapOf(
+                "children" to listOf(
+                    mapOf(
+                        "type" to "table_row",
+                        "table_row" to mapOf("cells" to cells)
+                    )
+                )
             )
+            
+            logger.info("Sending table row request: $requestBody")
             
             val response = httpClient.patch("${config.notionBaseUrl}/v1/blocks/$tableBlockId/children") {
                 header("Authorization", "Bearer ${config.notionApiToken}")
                 header("Notion-Version", config.notionApiVersion)
                 header("Content-Type", "application/json")
-                setBody(mapOf("children" to listOf(newTableRow)))
+                setBody(requestBody)
             }
             
             if (response.status.isSuccess()) {
@@ -339,5 +336,46 @@ class NotionService {
     
     fun close() {
         httpClient.close()
+    }
+
+    suspend fun processTxnSmsRequest(request: TxnSMSRequest): JsonObject {
+        val txn = koog.analyseSMS(request.content)
+        val pageTitle = when(txn.type) {
+            TransactionType.INFLOW -> "Income"
+            TransactionType.NONE -> "Failed SMS Parsers"
+            TransactionType.OUTFLOW -> "Expenses"
+            TransactionType.CC_USAGE -> "Credit card Usage"
+        }
+
+        val existingPageId = findPageByTitle(pageTitle)
+        val tableData = mapOf<String, String>("date" to txn.date, "detail" to txn.detail, "Amount(INR)" to txn.amount_inr.toString(), "Amount(USD)" to txn.amount_usd.toString())
+
+        return if (existingPageId != null) {
+            // Page exists, try to append to existing table or create new table
+            logger.info("Found existing page: $existingPageId")
+            val tableBlockId = findTableInPage(existingPageId)
+
+            if (tableBlockId != null) {
+                logger.info("Appending to existing table in page: $existingPageId")
+                appendToTable(existingPageId, tableData)
+            } else {
+                logger.info("Creating new table in existing page: $existingPageId")
+                createTableInPage(existingPageId, tableData, tableData.keys.toList())
+            }
+        } else {
+            // Page doesn't exist, create a new one with a table
+            logger.info("Creating new page with table. Title: $pageTitle")
+            val newPageResponse = createPage(IngestRequest(
+                title = pageTitle,
+                content = "Created with table data",
+            ))
+
+            // Extract page ID from response and create table
+            val pageId = newPageResponse["id"]?.toString()?.replace("\"", "")
+                ?: throw Exception("Could not extract page ID from response")
+
+            createTableInPage(pageId, tableData, tableData.keys.toList())
+        }
+
     }
 }

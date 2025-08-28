@@ -5,6 +5,7 @@ import io.ktor.server.routing.*
 import org.example.routes.handlers.HealthRouteHandler
 import org.example.routes.handlers.IngestRouteHandler
 import org.example.routes.handlers.TableIngestRouteHandler
+import org.example.routes.handlers.TxnSMSRouteHandler
 
 class RouteConfiguration {
     
@@ -14,10 +15,21 @@ class RouteConfiguration {
                 configureIngestRoutes()
                 configureTableIngestRoutes()
                 configureHealthRoutes()
+                configureTxnAnalyserRoutes()
             }
         }
     }
-    
+
+    private fun Route.configureTxnAnalyserRoutes() {
+        val txnRouteHandler = TxnSMSRouteHandler()
+
+        route("/txn") {
+            post {
+                txnRouteHandler.handleTxnSMSRequest(call)
+            }
+        }
+    }
+
     private fun Route.configureIngestRoutes() {
         val ingestHandler = IngestRouteHandler()
         
