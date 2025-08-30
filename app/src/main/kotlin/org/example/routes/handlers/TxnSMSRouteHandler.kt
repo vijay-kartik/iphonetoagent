@@ -39,7 +39,6 @@ class TxnSMSRouteHandler(
             validateRequest(request)
 
             logger.info("Processing txn sms request: ${request.content}")
-//            val result = txnSMSAnalyserService.processTxnSmsRequest(request)
             val transaction = analyseSMSUseCase.execute(request.content)
             val result = txnSMSAnalyserService.processTxnSmsRequest(transaction)
 

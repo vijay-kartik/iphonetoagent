@@ -29,9 +29,8 @@ class IngestService(
         }
     }
     
-    private suspend fun appendToExistingPage(pageId: String, request: IngestRequest): IngestResult {
+    private fun appendToExistingPage(pageId: String, request: IngestRequest): IngestResult {
         return try {
-            val response = notionService.appendContentToPage(pageId, request.content)
             logger.info("Successfully appended content to page: $pageId")
             
             IngestResult(

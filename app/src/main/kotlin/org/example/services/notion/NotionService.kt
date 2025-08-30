@@ -10,9 +10,6 @@ import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
-import org.example.domain.usecase.AnalyseSMSUseCase
-import org.example.domain.usecase.impl.AnalyseSMSUseCaseImpl
-import org.example.services.agentic_ai.KoogService
 import org.example.services.agentic_ai.data.Transaction
 import org.example.services.agentic_ai.data.TransactionType
 import org.example.services.config.ConfigService
@@ -22,8 +19,7 @@ import org.slf4j.LoggerFactory
 class NotionService {
     private val logger = LoggerFactory.getLogger(NotionService::class.java)
     private val config = ConfigService.getInstance()
-    private val analyseSMSUseCase: AnalyseSMSUseCase = AnalyseSMSUseCaseImpl(KoogService.getInstance())
-    
+
     private val httpClient = HttpClient(CIO) {
         install(ContentNegotiation) {
             json(Json {
@@ -75,39 +71,6 @@ class NotionService {
         } catch (e: Exception) {
             logger.error("Error searching for page", e)
             return null
-        }
-    }
-
-    suspend fun appendContentToPage(pageId: String, content: String): JsonObject {
-        try {
-            logger.info("Appending content to page: $pageId")
-            val aiContent = analyseSMSUseCase.execute(content)
-            
-            val newBlock = NotionBlock(
-                paragraph = NotionParagraph(
-                    rich_text = listOf(NotionRichText(text = NotionText(aiContent.toString())))
-                )
-            )
-            
-            val response = httpClient.patch("${config.notionBaseUrl}/v1/blocks/$pageId/children") {
-                header("Authorization", "Bearer ${config.notionApiToken}")
-                header("Notion-Version", config.notionApiVersion)
-                header("Content-Type", "application/json")
-                setBody(mapOf("children" to listOf(newBlock)))
-            }
-            
-            if (response.status.isSuccess()) {
-                val rawResponse = response.body<JsonObject>()
-                logger.info("Successfully appended content to page. Response: $rawResponse")
-                return rawResponse
-            } else {
-                val errorBody = response.body<String>()
-                logger.error("Failed to append content to page. Status: ${response.status}, Body: $errorBody")
-                throw Exception("Failed to append content to page: ${response.status}")
-            }
-        } catch (e: Exception) {
-            logger.error("Error appending content to page", e)
-            throw e
         }
     }
 
@@ -322,7 +285,6 @@ class NotionService {
     }
 
     suspend fun saveTransaction(txn: Transaction): JsonObject {
-//        val txn = analyseSMSUseCase.execute(request.content)
         val pageTitle = when(txn.type) {
             TransactionType.INFLOW -> "Income"
             TransactionType.NONE -> "Failed SMS Parsers"
