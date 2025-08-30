@@ -10,6 +10,8 @@ import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
+import org.example.domain.usecase.AnalyseSMSUseCase
+import org.example.domain.usecase.impl.AnalyseSMSUseCaseImpl
 import org.example.routes.request.TxnSMSRequest
 import org.example.services.agentic_ai.KoogService
 import org.example.services.agentic_ai.data.TransactionType
@@ -20,7 +22,7 @@ import org.slf4j.LoggerFactory
 class NotionService {
     private val logger = LoggerFactory.getLogger(NotionService::class.java)
     private val config = ConfigService.getInstance()
-    private val koog = KoogService.getInstance()
+    private val analyseSMSUseCase: AnalyseSMSUseCase = AnalyseSMSUseCaseImpl(KoogService.getInstance())
     
     private val httpClient = HttpClient(CIO) {
         install(ContentNegotiation) {
@@ -79,7 +81,7 @@ class NotionService {
     suspend fun appendContentToPage(pageId: String, content: String): JsonObject {
         try {
             logger.info("Appending content to page: $pageId")
-            val aiContent = koog.analyseSMS(content)
+            val aiContent = analyseSMSUseCase.execute(content)
             
             val newBlock = NotionBlock(
                 paragraph = NotionParagraph(
@@ -320,7 +322,7 @@ class NotionService {
     }
 
     suspend fun processTxnSmsRequest(request: TxnSMSRequest): JsonObject {
-        val txn = koog.analyseSMS(request.content)
+        val txn = analyseSMSUseCase.execute(request.content)
         val pageTitle = when(txn.type) {
             TransactionType.INFLOW -> "Income"
             TransactionType.NONE -> "Failed SMS Parsers"
@@ -357,6 +359,5 @@ class NotionService {
 
             createTableInPage(pageId, tableData, tableData.keys.toList())
         }
-
     }
 }

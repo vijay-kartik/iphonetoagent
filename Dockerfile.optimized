@@ -1,0 +1,68 @@
+# Optimized multi-stage build with better caching
+# Stage 1: Build the application with enhanced caching
+FROM --platform=linux/amd64 gradle:8.5-jdk21 AS builder
+
+# Set working directory
+WORKDIR /app
+
+# Enable Gradle build cache
+ENV GRADLE_OPTS="-Dorg.gradle.caching=true -Dorg.gradle.parallel=true -Dorg.gradle.daemon=false"
+
+# Copy gradle wrapper and configuration files first (these change less frequently)
+COPY gradle/ gradle/
+COPY gradlew gradlew
+COPY gradle.properties gradle.properties
+COPY settings.gradle.kts settings.gradle.kts
+
+# Make gradlew executable
+RUN chmod +x ./gradlew
+
+# Copy build files (these change more frequently but still less than source)
+COPY app/build.gradle.kts app/build.gradle.kts
+
+# Download dependencies and populate build cache - this layer will be cached
+RUN ./gradlew dependencies --no-daemon --build-cache
+
+# Copy source code (this changes most frequently)
+COPY app/src/ app/src/
+
+# Build the application with build cache enabled
+RUN ./gradlew assemble --no-daemon --build-cache --parallel
+
+# Stage 2: Runtime image (unchanged for optimization)
+FROM --platform=linux/amd64 eclipse-temurin:21-jre
+
+# Install necessary packages
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    ca-certificates \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create app user for security
+RUN groupadd -r appuser && useradd -r -g appuser appuser
+
+# Set working directory
+WORKDIR /app
+
+# Copy the built JAR from builder stage
+COPY --from=builder /app/app/build/libs/app.jar app.jar
+
+# Change ownership to app user
+RUN chown -R appuser:appuser /app
+
+# Switch to app user
+USER appuser
+
+# Expose port (Cloud Run will override this)
+EXPOSE 8080
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8080/api/health || exit 1
+
+# Set JVM options for Cloud Run
+ENV JAVA_OPTS="-XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0 -XX:+UseG1GC -XX:+UseStringDeduplication"
+
+# Run the application
+ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]

@@ -47,21 +47,17 @@ dependencies {
     // Testing
     testImplementation("io.ktor:ktor-server-test-host:3.2.3")
     testImplementation("org.jetbrains.kotlin:kotlin-test:2.2.0")
-    testImplementation("junit:junit:4.13.2")
+    testImplementation("org.junit.jupiter:junit-jupiter:5.10.1")
+    testImplementation("org.mockito:mockito-core:5.8.0")
+    testImplementation("org.mockito.kotlin:mockito-kotlin:5.2.1")
 
     //koog agentic ai framework
     implementation("ai.koog:koog-agents:0.3.0")
     implementation("com.google.code.gson:gson:2.10.1")
 }
 
-testing {
-    suites {
-        // Configure the built-in test suite
-        val test by getting(JvmTestSuite::class) {
-            // Use Kotlin Test test framework
-            useKotlinTest("2.2.0")
-        }
-    }
+tasks.test {
+    useJUnitPlatform()
 }
 
 // Apply a specific Java toolchain to ease working on different environments.
