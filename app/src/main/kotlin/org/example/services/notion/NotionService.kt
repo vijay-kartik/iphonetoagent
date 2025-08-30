@@ -12,8 +12,8 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import org.example.domain.usecase.AnalyseSMSUseCase
 import org.example.domain.usecase.impl.AnalyseSMSUseCaseImpl
-import org.example.routes.request.TxnSMSRequest
 import org.example.services.agentic_ai.KoogService
+import org.example.services.agentic_ai.data.Transaction
 import org.example.services.agentic_ai.data.TransactionType
 import org.example.services.config.ConfigService
 import org.example.types.*
@@ -321,8 +321,8 @@ class NotionService {
         httpClient.close()
     }
 
-    suspend fun processTxnSmsRequest(request: TxnSMSRequest): JsonObject {
-        val txn = analyseSMSUseCase.execute(request.content)
+    suspend fun saveTransaction(txn: Transaction): JsonObject {
+//        val txn = analyseSMSUseCase.execute(request.content)
         val pageTitle = when(txn.type) {
             TransactionType.INFLOW -> "Income"
             TransactionType.NONE -> "Failed SMS Parsers"
@@ -331,7 +331,7 @@ class NotionService {
         }
 
         val existingPageId = findPageByTitle(pageTitle)
-        val tableData = mapOf<String, String>("date" to txn.date.toString(), "detail" to txn.detail.toString(), "Amount(INR)" to txn.amount_inr.toString(), "Amount(USD)" to txn.amount_usd.toString(), "Category" to txn.category.toString())
+        val tableData = mapOf<String, String>("date" to txn.date.toString(), "detail" to txn.detail.toString(), "Amount INR" to txn.amount_inr.toString(), "Amount USD" to txn.amount_usd.toString(), "Category" to txn.category.toString())
 
         return if (existingPageId != null) {
             // Page exists, try to append to existing table or create new table

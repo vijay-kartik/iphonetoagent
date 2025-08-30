@@ -54,6 +54,38 @@ dependencies {
     //koog agentic ai framework
     implementation("ai.koog:koog-agents:0.3.0")
     implementation("com.google.code.gson:gson:2.10.1")
+    
+    // Supabase integration - using 3.2.2 with version constraints
+    implementation("io.github.jan-tennert.supabase:supabase-kt:3.2.2") {
+        exclude(group = "org.jetbrains.kotlinx", module = "kotlinx-serialization-core")
+        exclude(group = "org.jetbrains.kotlinx", module = "kotlinx-serialization-json")
+        exclude(group = "org.jetbrains.kotlinx", module = "kotlinx-datetime")
+    }
+    implementation("io.github.jan-tennert.supabase:postgrest-kt:3.2.2") {
+        exclude(group = "org.jetbrains.kotlinx", module = "kotlinx-serialization-core")
+        exclude(group = "org.jetbrains.kotlinx", module = "kotlinx-serialization-json")
+        exclude(group = "org.jetbrains.kotlinx", module = "kotlinx-datetime")
+    }
+    implementation("io.github.jan-tennert.supabase:auth-kt:3.2.2") {
+        exclude(group = "org.jetbrains.kotlinx", module = "kotlinx-serialization-core")
+        exclude(group = "org.jetbrains.kotlinx", module = "kotlinx-serialization-json")
+        exclude(group = "org.jetbrains.kotlinx", module = "kotlinx-datetime")
+    }
+    implementation("io.github.jan-tennert.supabase:realtime-kt:3.2.2") {
+        exclude(group = "org.jetbrains.kotlinx", module = "kotlinx-serialization-core")
+        exclude(group = "org.jetbrains.kotlinx", module = "kotlinx-serialization-json")
+        exclude(group = "org.jetbrains.kotlinx", module = "kotlinx-datetime")
+    }
+    implementation("io.github.jan-tennert.supabase:storage-kt:3.2.2") {
+        exclude(group = "org.jetbrains.kotlinx", module = "kotlinx-serialization-core")
+        exclude(group = "org.jetbrains.kotlinx", module = "kotlinx-serialization-json")
+        exclude(group = "org.jetbrains.kotlinx", module = "kotlinx-datetime")
+    }
+    
+    // Force specific versions compatible with AI framework
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:1.8.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.2")
 }
 
 tasks.test {

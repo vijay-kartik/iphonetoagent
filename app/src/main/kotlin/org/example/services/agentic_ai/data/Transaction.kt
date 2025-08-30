@@ -9,9 +9,9 @@ import kotlinx.serialization.Serializable
 data class Transaction(
     val date: String,
     val detail: String,
-    @SerialName("Amount(INR)")
+    @SerialName("Amount INR")
     val amount_inr: Double,
-    @SerialName("Amount(USD)")
+    @SerialName("Amount USD")
     val amount_usd: Double,
     val type: TransactionType,
     val category: TxnCategory

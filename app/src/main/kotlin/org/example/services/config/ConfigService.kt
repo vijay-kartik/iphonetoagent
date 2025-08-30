@@ -43,6 +43,19 @@ class ConfigService {
         System.getenv("GEMINI_API_KEY") ?: "test-api-key"
     }
     
+    // Supabase Configuration
+    val supabaseUrl: String = try {
+        config.getString("supabase.url")
+    } catch (e: Exception) {
+        System.getenv("SUPABASE_URL") ?: "https://your-project.supabase.co"
+    }
+    
+    val supabaseServiceRoleKey: String = try {
+        config.getString("supabase.serviceRoleKey")
+    } catch (e: Exception) {
+        System.getenv("SUPABASE_KEY") ?: "your-service-role-key"
+    }
+    
     companion object {
         private var instance: ConfigService? = null
         
