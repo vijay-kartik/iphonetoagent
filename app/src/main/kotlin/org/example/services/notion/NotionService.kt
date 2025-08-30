@@ -11,7 +11,6 @@ import io.ktor.serialization.kotlinx.json.*
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import org.example.routes.request.TxnSMSRequest
-import org.example.routes.response.TxnSmsResponse
 import org.example.services.agentic_ai.KoogService
 import org.example.services.agentic_ai.data.TransactionType
 import org.example.services.config.ConfigService
@@ -163,33 +162,20 @@ class NotionService {
                 ?: throw Exception("No table found in page $pageId")
             
             logger.info("Using table block ID: $tableBlockId")
-            
-            // Convert table data to proper cell format
+
             val cells = tableData.values.map { value ->
-                listOf(
-                    mapOf(
-                        "type" to "text",
-                        "text" to mapOf("content" to value)
-                    )
-                )
+                listOf(NotionRichText(text = NotionText(value)))
             }
-            
-            val requestBody = mapOf(
-                "children" to listOf(
-                    mapOf(
-                        "type" to "table_row",
-                        "table_row" to mapOf("cells" to cells)
-                    )
-                )
+
+            val newTableRow = NotionTableRow(
+                table_row = NotionTableRowData(cells = cells)
             )
-            
-            logger.info("Sending table row request: $requestBody")
-            
+
             val response = httpClient.patch("${config.notionBaseUrl}/v1/blocks/$tableBlockId/children") {
                 header("Authorization", "Bearer ${config.notionApiToken}")
                 header("Notion-Version", config.notionApiVersion)
                 header("Content-Type", "application/json")
-                setBody(requestBody)
+                setBody(NotionAppendTableRowRequest(children = listOf(newTableRow)))
             }
             
             if (response.status.isSuccess()) {
@@ -238,7 +224,7 @@ class NotionService {
                 header("Authorization", "Bearer ${config.notionApiToken}")
                 header("Notion-Version", config.notionApiVersion)
                 header("Content-Type", "application/json")
-                setBody(mapOf("children" to listOf(tableBlock)))
+                setBody(NotionAppendBlockRequest(children = listOf(tableBlock)))
             }
             
             if (response.status.isSuccess()) {
@@ -265,29 +251,24 @@ class NotionService {
             }
             
             if (response.status.isSuccess()) {
-                val responseBody = response.body<JsonObject>()
-                logger.info("Page blocks response: $responseBody")
+                val blocksResponse = response.body<NotionBlockChildrenResponse>()
+                logger.info("Found ${blocksResponse.results.size} blocks in page")
                 
-                // Parse the results array properly
-                val results = responseBody["results"]?.toString()
-                if (results != null) {
-                    // First, check if we have a table type anywhere in the response
-                    if (results.contains("\"type\":\"table\"")) {
-                        // Extract the ID that comes before the table type
-                        // Look for pattern: "id":"some-id"...anything..."type":"table"
-                        val tableBlockRegex = "\"id\":\"([^\"]+)\"[\\s\\S]*?\"type\":\"table\"".toRegex()
-                        val matchResult = tableBlockRegex.find(results)
-                        
-                        if (matchResult != null) {
-                            val tableId = matchResult.groupValues[1]
-                            logger.info("Found existing table with ID: $tableId")
-                            return tableId
-                        }
-                    }
-                    logger.info("No table found in page blocks")
+                // Look for the first table block
+                val tableBlock = blocksResponse.results.firstOrNull { block -> 
+                    block.type == "table" 
+                }
+                
+                return if (tableBlock != null) {
+                    logger.info("Found table block with ID: ${tableBlock.id}")
+                    tableBlock.id
+                } else {
+                    logger.info("No table blocks found in page")
+                    null
                 }
             } else {
-                logger.error("Failed to get page blocks. Status: ${response.status}")
+                val errorBody = response.body<String>()
+                logger.error("Failed to get page blocks. Status: ${response.status}, Body: $errorBody")
             }
             return null
         } catch (e: Exception) {
@@ -318,7 +299,7 @@ class NotionService {
                 logger.info("Creating new page with table. Title: ${request.pageTitle}")
                 val newPageResponse = createPage(IngestRequest(
                     title = request.pageTitle,
-                    content = "Created with table data",
+                    content = "",
                     metadata = request.metadata
                 ))
                 
@@ -348,7 +329,7 @@ class NotionService {
         }
 
         val existingPageId = findPageByTitle(pageTitle)
-        val tableData = mapOf<String, String>("date" to txn.date, "detail" to txn.detail, "Amount(INR)" to txn.amount_inr.toString(), "Amount(USD)" to txn.amount_usd.toString())
+        val tableData = mapOf<String, String>("date" to txn.date.toString(), "detail" to txn.detail.toString(), "Amount(INR)" to txn.amount_inr.toString(), "Amount(USD)" to txn.amount_usd.toString())
 
         return if (existingPageId != null) {
             // Page exists, try to append to existing table or create new table
@@ -367,7 +348,7 @@ class NotionService {
             logger.info("Creating new page with table. Title: $pageTitle")
             val newPageResponse = createPage(IngestRequest(
                 title = pageTitle,
-                content = "Created with table data",
+                content = "",
             ))
 
             // Extract page ID from response and create table

@@ -187,3 +187,27 @@ data class NotionTableRow(
 data class NotionTableRowData(
     val cells: List<List<NotionRichText>>
 )
+
+@Serializable
+data class NotionAppendTableRowRequest(
+    val children: List<NotionTableRow>
+)
+
+@Serializable 
+data class NotionAppendBlockRequest(
+    val children: List<NotionTableBlock>
+)
+
+@Serializable
+data class NotionBlockChildrenResponse(
+    val results: List<NotionBlockChild>,
+    val has_more: Boolean,
+    val next_cursor: String? = null
+)
+
+@Serializable
+data class NotionBlockChild(
+    val id: String,
+    val type: String,
+    val `object`: String = "block"
+)
