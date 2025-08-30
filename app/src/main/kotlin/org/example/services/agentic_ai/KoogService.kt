@@ -7,8 +7,8 @@ import ai.koog.agents.core.dsl.builder.forwardTo
 import ai.koog.agents.core.dsl.builder.strategy
 import ai.koog.agents.core.dsl.extension.nodeExecuteTool
 import ai.koog.agents.core.dsl.extension.nodeLLMRequest
-import ai.koog.agents.core.dsl.extension.onToolCall
 import ai.koog.agents.core.dsl.extension.nodeLLMSendToolResult
+import ai.koog.agents.core.dsl.extension.onToolCall
 import ai.koog.agents.core.tools.ToolRegistry
 import ai.koog.agents.features.eventHandler.feature.handleEvents
 import ai.koog.prompt.dsl.prompt
@@ -20,7 +20,7 @@ import ai.koog.prompt.structure.json.JsonStructuredData
 import kotlinx.coroutines.runBlocking
 import org.example.services.agentic_ai.data.Transaction
 import org.example.services.agentic_ai.data.TransactionType
-import org.example.services.agentic_ai.data.TransactionTypeVO
+import org.example.services.agentic_ai.data.TxnCategory
 import org.example.services.agentic_ai.tools.ExpenseExtractor
 import org.example.services.config.ConfigService
 
@@ -62,17 +62,17 @@ class KoogService {
                 if (result.isSuccess) {
                     result.getOrNull()?.structure as Transaction
                 } else {
-                    Transaction("", "", Double.NaN, Double.NaN, TransactionType.INFLOW)
+                    Transaction("", "", Double.NaN, Double.NaN, TransactionType.INFLOW, TxnCategory.Miscellaneous)
                 }
             } catch (e: Exception) {
-                Transaction("", "", Double.NaN, Double.NaN, TransactionType.INFLOW)
+                Transaction("", "", Double.NaN, Double.NaN, TransactionType.INFLOW, TxnCategory.Miscellaneous)
             }
         }
         
         // Fallback processing for invalid data
         val processInvalidResult by node<Message.Response, Transaction> { response ->
             // Return a failed transaction for invalid data
-            Transaction("INVALID", "VALIDATION_FAILED", 0.0, 0.0, TransactionType.NONE)
+            Transaction("INVALID", "VALIDATION_FAILED", 0.0, 0.0, TransactionType.NONE, TxnCategory.Miscellaneous)
         }
         
         // Define the flow with proper validation routing
@@ -105,6 +105,9 @@ class KoogService {
                         |   - amount_inr: Amount in Indian Rupees (convert from text, remove currency symbols)
                         |   - amount_usd: Amount in USD (usually 0.0 for Indian transactions)
                         |   - type: Transaction type - determine from context as INFLOW, OUTFLOW, or CC_USAGE
+                        |   - category: The category of transaction. It derives from both the SMS text and the type of transaction it is classified into:
+                        |   if type is OUTFLOW, which means it is an expense transaction, then category must lie into one of Food, Clothing, Flights, Transportation, Miscellaneous
+                        |   else if type is INFLOW, which means it is an income transaction, then category must lie into one of Salary, Dividend, Transfer
                         |
                         |ALWAYS call the expense_extractor tool first before providing any other response.""".trimMargin()
                     )

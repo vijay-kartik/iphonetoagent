@@ -13,7 +13,8 @@ data class Transaction(
     val amount_inr: Double,
     @SerialName("Amount(USD)")
     val amount_usd: Double,
-    val type: TransactionType
+    val type: TransactionType,
+    val category: TxnCategory
 ): ToolResult {
     override fun toStringDefault(): String {
         return this.toString()
@@ -27,7 +28,8 @@ data class TransactionArgs(
     val detail: String,
     val amount_inr: Double,
     val amount_usd: Double,
-    val type: TransactionType
+    val type: TransactionType,
+    val category: TxnCategory
 ): ToolArgs
 
 @Serializable
