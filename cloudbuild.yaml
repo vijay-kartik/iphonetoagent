@@ -21,9 +21,6 @@ options:
   
   # Enable disk caching
   diskSizeGb: 100
-  
-  # Use faster disk type
-  diskType: 'SSD'
 
 # Store images in Container Registry for caching
 images:

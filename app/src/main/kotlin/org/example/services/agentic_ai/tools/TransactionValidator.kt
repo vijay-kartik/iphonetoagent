@@ -4,13 +4,13 @@ import ai.koog.agents.core.tools.*
 import kotlinx.serialization.KSerializer
 import org.example.services.agentic_ai.data.TransactionArgs
 
-object ExpenseExtractor: Tool<TransactionArgs, ToolResult.Boolean>() {
+object TransactionValidator: Tool<TransactionArgs, ToolResult.Boolean>() {
     override val argsSerializer: KSerializer<TransactionArgs>
         get() = TransactionArgs.serializer()
 
     override val descriptor: ToolDescriptor = ToolDescriptor(
         name = "transaction-detail-validator",
-        description = "Tool for verifying that extracted details from a transaction sms are valid values or not",
+        description = "Tool for verifying that extracted details from a transaction sms are valid",
         requiredParameters = listOf(
             ToolParameterDescriptor(name = "date", description = "Date on which the transaction is performed", type = ToolParameterType.String),
             ToolParameterDescriptor(name = "detail", description = "Person or entity name the transaction is credited to or done for", type = ToolParameterType.String),
