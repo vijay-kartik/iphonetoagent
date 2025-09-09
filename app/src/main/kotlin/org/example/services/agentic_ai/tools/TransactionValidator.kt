@@ -12,7 +12,7 @@ object TransactionValidator: Tool<TransactionArgs, ToolResult.Boolean>() {
         name = "transaction-detail-validator",
         description = "Tool for verifying that extracted details from a transaction sms are valid",
         requiredParameters = listOf(
-            ToolParameterDescriptor(name = "date", description = "Date on which the transaction is performed", type = ToolParameterType.String),
+            ToolParameterDescriptor(name = "date", description = "Date (string format = dd/mm/yyyy) on which the transaction is performed", type = ToolParameterType.String),
             ToolParameterDescriptor(name = "detail", description = "Person or entity name the transaction is credited to or done for", type = ToolParameterType.String),
             ToolParameterDescriptor(name = "amount_inr", description = "Amount of transaction done in currency INR.", type = ToolParameterType.String),
             ToolParameterDescriptor(name = "amount_usd", description = "Amount of transaction done in currency USD", type = ToolParameterType.String),
