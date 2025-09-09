@@ -50,6 +50,13 @@ class TxnSMSRouteHandler(
         }
     }
 
+    suspend fun analyseTransaction(call: ApplicationCall) {
+        call.runCatching(logger = logger, errorMessage = "Failed to process analyse txn", errorCode = "ANALYSE_TXN_ERROR") {
+
+            respond(HttpStatusCode.OK, "received OK")
+        }
+    }
+
     private fun validateRequest(request: TxnSMSRequest) {
         if (request.content.isBlank()) throw IllegalArgumentException("Content cannot be empty")
     }

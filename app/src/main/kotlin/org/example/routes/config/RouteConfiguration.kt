@@ -28,6 +28,11 @@ class RouteConfiguration {
                 txnRouteHandler.handleTxnSMSRequest(call)
             }
         }
+        route("/txn/analyse") {
+            get {
+                txnRouteHandler.analyseTransaction(call)
+            }
+        }
     }
 
     private fun Route.configureIngestRoutes() {

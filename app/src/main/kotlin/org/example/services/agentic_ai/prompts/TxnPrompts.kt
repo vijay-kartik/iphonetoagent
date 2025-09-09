@@ -18,6 +18,9 @@ object TxnPrompts {
                         |   - category: The category of transaction. It derives from both the SMS text and the type of transaction it is classified into:
                         |   if type is OUTFLOW, which means it is an expense transaction, then category must lie into one of Food, Clothing, Flights, Transportation, Miscellaneous
                         |   else if type is INFLOW, which means it is an income transaction, then category must lie into one of Salary, Dividend, Transfer
+                        |   
+                        |   - account_name: The name of account which the transaction is done in.  
+                        |   if type is OUTFLOW/CC_USAGE, then it is the account the amount is debited from, else it is the account to which amount is credited into.
                         |
                         |ALWAYS call the expense_extractor tool first before providing any other response."""
     fun extractStructured(user: String) = prompt(PromptIds.EXTRACT_TRANSACTION_STRUCTURED) {

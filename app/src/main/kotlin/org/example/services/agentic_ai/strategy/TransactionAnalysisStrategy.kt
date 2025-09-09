@@ -55,7 +55,7 @@ class TransactionAnalysisStrategy(
         // Fallback processing for invalid data
         val processInvalidResult by node<Message.Response, Transaction> { response ->
             // Return a failed transaction for invalid data
-            Transaction("INVALID", "VALIDATION_FAILED", 0.0, 0.0, TransactionType.NONE, TxnCategory.Miscellaneous)
+            Transaction("INVALID", "VALIDATION_FAILED", 0.0, 0.0, TransactionType.NONE, TxnCategory.Miscellaneous, "unknown")
         }
         
         // Define the flow with proper validation routing
@@ -69,6 +69,6 @@ class TransactionAnalysisStrategy(
     }
     
     private fun createFallbackTransaction(): Transaction {
-        return Transaction("", "", Double.NaN, Double.NaN, TransactionType.INFLOW, TxnCategory.Miscellaneous)
+        return Transaction("", "", Double.NaN, Double.NaN, TransactionType.INFLOW, TxnCategory.Miscellaneous, "unknown")
     }
 }
