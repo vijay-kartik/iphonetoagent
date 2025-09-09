@@ -293,7 +293,7 @@ class NotionService {
         }
 
         val existingPageId = findPageByTitle(pageTitle)
-        val tableData = mapOf<String, String>("date" to txn.date.toString(), "detail" to txn.detail.toString(), "Amount INR" to txn.amount_inr.toString(), "Amount USD" to txn.amount_usd.toString(), "Category" to txn.category.toString())
+        val tableData = mapOf("date" to txn.date, "detail" to txn.detail, "Amount INR" to txn.amount_inr.toString(), "Amount USD" to txn.amount_usd.toString(), "Category" to txn.category.toString(), "account_name" to txn.account_name)
 
         return if (existingPageId != null) {
             // Page exists, try to append to existing table or create new table
