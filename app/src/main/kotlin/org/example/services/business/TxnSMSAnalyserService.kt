@@ -35,4 +35,49 @@ class TxnSMSAnalyserService(
             Result.failure(e)
         }
     }
+
+    /**
+     * Fetch user's monthly transactions for analysis
+     * @param year Year (e.g., 2025)
+     * @param month Month (1-12)
+     * @return List of transactions for the specified month
+     */
+    suspend fun getMonthlyTransactions(year: Int, month: Int): Result<List<Transaction>> {
+        return try {
+            logger.info("Fetching monthly transactions for $year-$month")
+            
+            val transactions = storageService.getMonthlyTransactions(year, month)
+            
+            logger.info("Successfully retrieved ${transactions.size} transactions for $year-$month")
+            Result.success(transactions)
+        } catch (e: Exception) {
+            logger.error("Error fetching monthly transactions for $year-$month", e)
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * Fetch user's transactions by custom filter
+     * @param filterColumn Column to filter by (e.g., "amount", "category", "merchant")
+     * @param filterValue Value to filter for
+     * @param operator Comparison operator (eq, gte, lte, gt, lt, like, ilike)
+     * @return List of matching transactions
+     */
+    suspend fun getTransactionsByFilter(
+        filterColumn: String,
+        filterValue: Any,
+        operator: String = "eq"
+    ): Result<List<Transaction>> {
+        return try {
+            logger.info("Fetching transactions with filter: $filterColumn $operator $filterValue")
+            
+            val transactions = storageService.getTransactionsByFilter(filterColumn, filterValue, operator)
+            
+            logger.info("Successfully retrieved ${transactions.size} transactions matching filter")
+            Result.success(transactions)
+        } catch (e: Exception) {
+            logger.error("Error fetching transactions with filter: $filterColumn $operator $filterValue", e)
+            Result.failure(e)
+        }
+    }
 }
