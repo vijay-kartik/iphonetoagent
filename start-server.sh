@@ -3,13 +3,10 @@
 # Load environment variables from env.properties file
 if [ -f "env.properties" ]; then
     echo "Loading environment variables from env.properties..."
-    # Read each line, skip comments, and export variables
-    while IFS= read -r line; do
-        # Skip empty lines and comments
-        if [[ ! -z "$line" && ! "$line" =~ ^[[:space:]]*# ]]; then
-            export "$line"
-        fi
-    done < "env.properties"
+    # Source the properties file directly
+    set -a  # automatically export all variables
+    source "env.properties"
+    set +a
 else
     echo "Warning: env.properties file not found. Using system environment variables."
 fi

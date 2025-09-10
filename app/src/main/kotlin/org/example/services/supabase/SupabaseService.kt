@@ -87,6 +87,76 @@ class SupabaseService {
     }
     
     /**
+     * Select records with custom filters
+     */
+    suspend inline fun <reified T : Any> selectWithFilter(
+        tableName: String,
+        filterColumn: String,
+        filterValue: Any,
+        operator: String = "eq",
+        columns: Columns = Columns.ALL
+    ): List<T> {
+        return try {
+            logger.info("Querying records from table: $tableName with filter $filterColumn $operator $filterValue")
+            
+            val result = supabaseClient
+                .from(tableName)
+                .select(columns) {
+                    filter {
+                        when (operator) {
+                            "eq" -> eq(filterColumn, filterValue)
+                            "gte" -> gte(filterColumn, filterValue)
+                            "lte" -> lte(filterColumn, filterValue)
+                            "gt" -> gt(filterColumn, filterValue)
+                            "lt" -> lt(filterColumn, filterValue)
+                            "like" -> like(filterColumn, filterValue.toString())
+                            "ilike" -> ilike(filterColumn, filterValue.toString())
+                            else -> throw IllegalArgumentException("Unsupported operator: $operator")
+                        }
+                    }
+                }
+                .decodeList<T>()
+
+            logger.info("Successfully retrieved ${result.size} records from $tableName")
+            result
+        } catch (e: Exception) {
+            logger.error("Error querying table $tableName with filter", e)
+            throw e
+        }
+    }
+    
+    /**
+     * Select records with date range filter for monthly transactions
+     */
+    suspend inline fun <reified T : Any> selectByDateRange(
+        tableName: String,
+        dateColumn: String,
+        startDate: String,
+        endDate: String,
+        columns: Columns = Columns.ALL
+    ): List<T> {
+        return try {
+            logger.info("Querying records from table: $tableName for date range $startDate to $endDate")
+            
+            val result = supabaseClient
+                .from(tableName)
+                .select(columns) {
+                    filter {
+                        gte(dateColumn, startDate)
+                        lte(dateColumn, endDate)
+                    }
+                }
+                .decodeList<T>()
+
+            logger.info("Successfully retrieved ${result.size} records from $tableName for date range")
+            result
+        } catch (e: Exception) {
+            logger.error("Error querying table $tableName with date range", e)
+            throw e
+        }
+    }
+
+    /**
      * Delete records from table
      */
     suspend fun delete(tableName: String) {

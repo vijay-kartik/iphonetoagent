@@ -17,7 +17,8 @@ object TransactionValidator: Tool<TransactionArgs, ToolResult.Boolean>() {
             ToolParameterDescriptor(name = "amount_inr", description = "Amount of transaction done in currency INR.", type = ToolParameterType.String),
             ToolParameterDescriptor(name = "amount_usd", description = "Amount of transaction done in currency USD", type = ToolParameterType.String),
             ToolParameterDescriptor(name = "type", description = "Type of transaction", type = ToolParameterType.String),
-            ToolParameterDescriptor(name = "category", description = "Category the transaction is supposedly done in according to the type of transaction and sms text", type = ToolParameterType.String)
+            ToolParameterDescriptor(name = "category", description = "Category the transaction is supposedly done in according to the type of transaction and sms text", type = ToolParameterType.String),
+            ToolParameterDescriptor(name = "account_name", description = "Name of the account from where the amount has been debited from or credited into", type = ToolParameterType.String)
         )
     )
 
