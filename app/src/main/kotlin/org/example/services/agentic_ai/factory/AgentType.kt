@@ -8,6 +8,7 @@ enum class AgentType {
      * Agent specialized for analyzing transaction SMS messages
      */
     TRANSACTION_ANALYSIS,
+    MONTHLY_TXN_ANALYSIS
     
     // Future agent types can be added here
     // DOCUMENT_ANALYSIS,
