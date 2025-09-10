@@ -1,25 +1,26 @@
 package org.example.routes.handlers
 
-import io.ktor.http.HttpStatusCode
-import io.ktor.server.application.Application
-import io.ktor.server.application.ApplicationCall
-import io.ktor.server.request.receive
-import io.ktor.server.response.respond
+import io.ktor.http.*
+import io.ktor.server.application.*
+import io.ktor.server.request.*
+import io.ktor.server.response.*
 import org.example.domain.usecase.AnalyseSMSUseCase
+import org.example.domain.usecase.GenerateTxnAnalysisUseCase
 import org.example.domain.usecase.impl.AnalyseSMSUseCaseImpl
+import org.example.domain.usecase.impl.GenerateTxnAnalysisUseCaseImpl
 import org.example.routes.common.runCatching
 import org.example.routes.request.TxnSMSRequest
-import org.example.routes.response.TxnSmsResponse
-import org.example.services.agentic_ai.KoogService
 import org.example.services.auth.AuthService
 import org.example.services.business.TxnSMSAnalyserService
 import org.example.types.ErrorResponse
 import org.slf4j.LoggerFactory
+import java.time.LocalDate
 
 class TxnSMSRouteHandler(
     private val authService: AuthService = AuthService(),
     private val txnSMSAnalyserService: TxnSMSAnalyserService = TxnSMSAnalyserService(),
-    private val analyseSMSUseCase: AnalyseSMSUseCase = AnalyseSMSUseCaseImpl(KoogService.getInstance())
+    private val analyseSMSUseCase: AnalyseSMSUseCase = AnalyseSMSUseCaseImpl(),
+    private val generateTxnAnalysisUseCase: GenerateTxnAnalysisUseCase = GenerateTxnAnalysisUseCaseImpl()
 ) {
     private val logger = LoggerFactory.getLogger(TxnSMSRouteHandler::class.java)
     suspend fun handleTxnSMSRequest(call: ApplicationCall) {
@@ -52,8 +53,11 @@ class TxnSMSRouteHandler(
 
     suspend fun analyseTransaction(call: ApplicationCall) {
         call.runCatching(logger = logger, errorMessage = "Failed to process analyse txn", errorCode = "ANALYSE_TXN_ERROR") {
+            val request = receive<TxnSMSRequest>()
+            val txns = txnSMSAnalyserService.getMonthlyTransactions(LocalDate.now().year, LocalDate.now().monthValue)
+            val response = generateTxnAnalysisUseCase.execute(txns.toString())
 
-            respond(HttpStatusCode.OK, "received OK")
+            respond(HttpStatusCode.OK, response)
         }
     }
 

@@ -6,7 +6,7 @@ import org.example.services.agentic_ai.data.Transaction
 import org.example.services.agentic_ai.factory.AgentType
 
 class AnalyseSMSUseCaseImpl(
-    private val koogService: KoogService
+    private val koogService: KoogService = KoogService.getInstance()
 ) : AnalyseSMSUseCase {
     
     override fun execute(sms: String): Transaction {
